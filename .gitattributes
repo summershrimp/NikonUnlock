@@ -1,0 +1,3 @@
+# Preserve exact release bytes for SHA256SUMS.txt on every platform.
+* -text
+*.KEY binary
