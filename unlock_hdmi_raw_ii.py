@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Nikon Z6 II / Z7 II C 1.70 HDMI RAW activation (static-analysis profile).
 
-Default is an offline plan. Windows WPD transport has been used on Z6;
-this second-generation profile has NOT been tested on a physical camera.
+Default is an offline plan. Windows WPD transport has been used on Z6.
+This local branch adds an experimental macOS ImageCaptureCore transport.
+The second-generation profile has NOT been tested on a physical camera.
 """
 import argparse
 from contextlib import contextmanager
@@ -12,6 +13,7 @@ import json
 from pathlib import Path
 import re
 import struct
+import sys
 
 ITEM8_SIZE = 0x1FFFC
 MAGIC = 0x28CD7EE8
@@ -292,14 +294,19 @@ def main(argv=None):
         return 0
     if args.action != "list-devices" and args.action != "status":
         validate_keys(args.keys_dir)
-    from wpd_transport import WpdCamera
+    if sys.platform == "darwin":
+        from mac_transport import MacCamera as Camera
+    else:
+        from wpd_transport import WpdCamera as Camera
     if args.action == "list-devices":
-        print(json.dumps(WpdCamera.devices(), indent=2))
+        print(json.dumps(Camera.devices(), indent=2))
         return 0
     folder = args.backup_dir or Path(__file__).resolve().parent / "backups" / "z6ii_z7ii" / datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f_UTC")
     if folder.exists():
         parser.error(f"Backup directory already exists: {folder}")
-    with WpdCamera(args.device) as cam:
+    camera = (Camera(args.device, allow_activation=args.action == "unlock" and args.execute)
+              if sys.platform == "darwin" else Camera(args.device))
+    with camera as cam:
         result = run(cam, args.action, folder, args.keys_dir, args.after_reboot)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     print(f"Audit/backup: {folder}")

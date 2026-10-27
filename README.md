@@ -2,6 +2,11 @@
 
 [中文说明](README.zh.md)
 
+> This local branch adds an experimental macOS ImageCaptureCore transport for
+> Z6 II/Z7 II C 1.70 HDMI RAW. See [MACOS.md](MACOS.md). The macOS path has
+> not been validated on a physical camera; the original instructions below
+> describe the Windows release.
+
 Standalone Windows tools for **HDMI RAW activation** and **full language-list unlocking** on first-generation Nikon Z6/Z7 cameras, plus **experimental HDMI RAW activation** on Z6 II/Z7 II. The two features have separate scripts. There is no combined unlock command or parameter. No firmware image is flashed. Second-generation language unlocking is not included: the project currently has firmware analysis, but no corresponding executable unlock tool.
 
 ## Compatibility
