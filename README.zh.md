@@ -2,6 +2,8 @@
 
 [English](README.md)
 
+> **macOS 与 Z6 II 实机验证更新：** `unlock_hdmi_raw_ii.py` 现已同时支持 Windows WPD 与 **macOS 原生 `ImageCaptureCore` 传输层**（`mac_transport.py` + `mac_ptp_bridge.m`），并已在 **Nikon Z6 II（`V1.70`）实机**上完成激活、`F030` 提交、正常关机断电重启后的持久化读回验证，以及卡槽 1（`A:\`，CFexpress/XQD）槽位映射确认。macOS 详细分步操作见 [MACOS.md](MACOS.md)。
+
 Windows 独立工具包，为一代 Nikon Z6/Z7 提供 **HDMI RAW 解锁**和**完整多语言列表解锁**，并为 Z6 II/Z7 II 提供 **HDMI RAW 实验解锁脚本**。两个功能分别使用独立脚本，**不提供同时解锁的命令或参数**。无需刷写固件镜像。二代多语言解锁暂未收录：项目目前只有固件分析记录，尚无对应的可执行解锁工具。
 
 ## 兼容范围
@@ -10,7 +12,8 @@ Windows 独立工具包，为一代 Nikon Z6/Z7 提供 **HDMI RAW 解锁**和**�
 | --- | --- | --- |
 | Z6 | C 3.80 | 原项目已在一台实机分别验证 RAW、多语言操作及正常关机再开机后的持久化 |
 | Z7 | C 3.80 | 实验支持：固件分析确认 KEY 校验表相同，但完整写入流程及持久化尚未经实机验证；需要 `--experimental-z7` |
-| Z6 II / Z7 II | C 1.70 | 仅 HDMI RAW，使用 `unlock_hdmi_raw_ii.py`；已核对固件常量并完成离线模拟，尚未经二代实机、重启持久化和外录验证 |
+| Z6 II | C 1.70 | 仅 HDMI RAW，使用 `unlock_hdmi_raw_ii.py`（支持 Windows WPD 与 macOS ImageCaptureCore）；已在一台 Z6 II 实机验证激活、`F030` 提交及正常关机再开机后的持久化读回；兼容外录机实际录制仍需单独验证 |
+| Z7 II | C 1.70 | 实验支持（仅 HDMI RAW，使用 `unlock_hdmi_raw_ii.py`）；已核对固件常量并完成离线模拟，Z7 II 实机及外录尚未验证 |
 
 请按相机代际选择脚本：各脚本会拒绝另一代相机、其他固件版本及其他机型。KEY 文件相同并不等于所有配置行为相同。本发布版的打包和命令拆分已做离线检查，整理发布包期间未写入相机；外录设备兼容性及录制画质不在本次验证范围内。
 
@@ -76,7 +79,7 @@ python unlock_languages.py unlock --execute --experimental-z7
 
 ## Z6 II / Z7 II：实验性单独解锁 HDMI RAW
 
-要求 **C 1.70**、Python 3.11+ 和二代专用 KEY。文件名为 **HDMIARAW.KEY**（比一代多一个 `A`），`SRF_FUNC.KEY` 内容也不同。将 `keys/z6ii_z7ii/` 内两份文件复制到相机存储卡根目录。固件使用内部 `A:\` 路径，不是电脑盘符；双卡槽映射尚未经实机确认。若报 `0x200F`，请先解决卡上文件位置问题。
+要求 **C 1.70**、Python 3.11+ 和二代专用 KEY。文件名为 **HDMIARAW.KEY**（比一代多一个 `A`），`SRF_FUNC.KEY` 内容也不同。将 `keys/z6ii_z7ii/` 内两份文件复制到相机存储卡根目录。固件内部固定读取 `A:\HDMIARAW.KEY` 与 `A:\SRF_FUNC.KEY`（无 `B:\` 路径）。Z6 II 实机验证确认：**内部 `A:\` 固定对应卡槽 1（CFexpress / XQD）**，卡槽 2（SD）对应 `B:\`；即使卡槽 1 无卡、仅将 KEY 放入卡槽 2 的 SD 卡，相机仍会返回 `0x200F`（找不到 KEY）。请务必将两份 KEY 放在 **卡槽 1（CFexpress / XQD）** 存储卡根目录。macOS 下的 `._*` 旁文件清理、安全推出及完整命令顺序见 [MACOS.md](MACOS.md)。
 
 ```powershell
 python unlock_hdmi_raw_ii.py unlock

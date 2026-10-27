@@ -63,3 +63,27 @@ class CliTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class MacTransportTests(unittest.TestCase):
+    def test_camera_must_be_discovered_before_opening(self):
+        import mac_transport
+        from pathlib import Path
+
+        source = Path(mac_transport.SOURCE).read_text()
+        wait = source.index('if (![self waitForCamera:deviceID timeout:12])')
+        auto = source.index('if ([deviceID isEqualToString:@"auto"]) {', wait)
+        self.assertIn('Nikon camera was not discovered', source[wait:auto])
+        self.assertIn('self.cameras.count > 1', source)
+
+    def test_prepare_keys_removes_macos_appledouble_sidecars(self):
+        from pathlib import Path
+        import unlock_hdmi_raw_ii as r
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / '._HDMIARAW.KEY').write_bytes(b'x' * 4096)
+            (root / '._SRF_FUNC.KEY').write_bytes(b'y' * 4096)
+            r.prepare_keys(root)
+            self.assertFalse((root / '._HDMIARAW.KEY').exists())
+            self.assertFalse((root / '._SRF_FUNC.KEY').exists())
+            r.validate_keys(root)
