@@ -2,10 +2,7 @@
 
 [中文说明](README.zh.md)
 
-> This local branch adds an experimental macOS ImageCaptureCore transport for
-> Z6 II/Z7 II C 1.70 HDMI RAW. See [MACOS.md](MACOS.md). The macOS path has
-> not been validated on a physical camera; the original instructions below
-> describe the Windows release.
+> **macOS & Z6 II Hardware Update:** `unlock_hdmi_raw_ii.py` now supports native **macOS** execution via `ImageCaptureCore` (`mac_transport.py` + `mac_ptp_bridge.m`) in addition to Windows WPD, and has been hardware-validated on a physical **Nikon Z6 II (`V1.70`)** including cold-boot persistence readback and Slot 1 (`A:\`, CFexpress/XQD) key placement. See [MACOS.md](MACOS.md) for the step-by-step macOS guide.
 
 Standalone Windows tools for **HDMI RAW activation** and **full language-list unlocking** on first-generation Nikon Z6/Z7 cameras, plus **experimental HDMI RAW activation** on Z6 II/Z7 II. The two features have separate scripts. There is no combined unlock command or parameter. No firmware image is flashed. Second-generation language unlocking is not included: the project currently has firmware analysis, but no corresponding executable unlock tool.
 
@@ -15,7 +12,8 @@ Standalone Windows tools for **HDMI RAW activation** and **full language-list un
 | --- | --- | --- |
 | Z6 | C 3.80 | Individual RAW and language operations, plus persistence after normal power-off/on, validated on one camera in the source project |
 | Z7 | C 3.80 | Experimental; shared KEY tables established by firmware analysis, but the complete write sequence and persistence have not been hardware validated; requires `--experimental-z7` |
-| Z6 II / Z7 II | C 1.70 | HDMI RAW only, using `unlock_hdmi_raw_ii.py`; firmware constants and offline simulations checked, no second-generation hardware/persistence/recording validation |
+| Z6 II | C 1.70 | HDMI RAW only, using `unlock_hdmi_raw_ii.py` (Windows WPD or macOS ImageCaptureCore); activation, `F030` commit, and normal power-off/on persistence readback validated on one Z6 II camera; external recorder capture still requires separate verification |
+| Z7 II | C 1.70 | Experimental HDMI RAW only, using `unlock_hdmi_raw_ii.py`; shared C 1.70 firmware constants and offline simulations checked, Z7 II hardware and external recording not yet validated |
 
 Use the script for your camera generation: each rejects the other generation, other firmware versions and other models. Identical KEY files alone do not establish identical configuration behavior. This release's packaging and command separation were checked offline; it was not used to write a camera during release preparation. External recorder compatibility and recorded video quality are not covered by these checks.
 
@@ -81,7 +79,7 @@ python unlock_languages.py unlock --execute --experimental-z7
 
 ## Z6 II / Z7 II: experimental HDMI RAW only
 
-Requires **C 1.70**, Python 3.11+, and the dedicated second-generation KEY files. The filename is **HDMIARAW.KEY**, with an extra `A`, and `SRF_FUNC.KEY` also has different contents. Copy both files from `keys/z6ii_z7ii/` to the camera card root. The firmware uses its internal `A:\` path, not a PC drive letter; the dual-card slot mapping has not been hardware confirmed. If `0x200F` occurs, resolve the file placement before proceeding.
+Requires **C 1.70**, Python 3.11+, and the dedicated second-generation KEY files. The filename is **HDMIARAW.KEY**, with an extra `A`, and `SRF_FUNC.KEY` also has different contents. Copy both files from `keys/z6ii_z7ii/` to the camera card root. The firmware decodes fixed internal paths `A:\HDMIARAW.KEY` and `A:\SRF_FUNC.KEY` (no `B:\` path). Hardware testing on Z6 II confirmed that **`A:\` maps exclusively to Slot 1 (CFexpress / XQD)** while Slot 2 (SD) maps to `B:\`: placing the keys only on a Slot 2 SD card (even with Slot 1 empty) fails with `0x200F` (`key missing`). Always place both files in the root of a **Slot 1 (CFexpress / XQD)** card. On macOS, see [MACOS.md](MACOS.md) for AppleDouble `._*` cleanup and `diskutil eject` details.
 
 ```powershell
 python unlock_hdmi_raw_ii.py unlock

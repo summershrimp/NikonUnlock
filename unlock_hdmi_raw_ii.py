@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Nikon Z6 II / Z7 II C 1.70 HDMI RAW activation (static-analysis profile).
+"""Nikon Z6 II / Z7 II C 1.70 HDMI RAW activation profile.
 
-Default is an offline plan. Windows WPD transport has been used on Z6.
-This local branch adds an experimental macOS ImageCaptureCore transport.
-The second-generation profile has NOT been tested on a physical camera.
+Default is an offline plan. Supports Windows WPD and macOS ImageCaptureCore.
+Hardware-validated on Nikon Z6 II (C 1.70) over macOS ImageCaptureCore,
+including power-cycle persistence readback; Z7 II hardware and external
+recorder capture remain to be validated separately.
 """
 import argparse
 from contextlib import contextmanager
@@ -49,6 +50,9 @@ def prepare_keys(folder):
         if not p.exists():
             with p.open("xb") as stream:
                 stream.write(content)
+        sidecar = folder / f"._{name}"
+        if sidecar.is_file():
+            sidecar.unlink()
     validate_keys(folder)
     return {name: {"size": len(data), "sha256": digest(data)} for name, data in KEYS.items()}
 
@@ -282,11 +286,11 @@ def main(argv=None):
         parser.error("--after-reboot is only for verify")
     if args.action == "plan" or (args.action == "unlock" and not args.execute):
         print("OFFLINE PLAN; no camera accessed. Profile: Nikon Z6 II / Z7 II C1.70 ONLY.")
-        print("Copy HDMIARAW.KEY and SRF_FUNC.KEY from keys-dir to the camera card root (A:).")
+        print("Copy HDMIARAW.KEY and SRF_FUNC.KEY from keys-dir to Slot 1 (CFexpress/XQD, A:) card root.")
         print("DeviceInfo guard -> F001 -> masked backup + both key checks -> C102(0x28CD7EE8)")
         print("-> C052(1) -> RAW/config verification -> F030 -> verification -> F002 -> 944B.")
         print("F02D size=0x1FFFC; masked offsets=4,5. No language/region/reset commands.")
-        print("Static-analysis profile; second-generation hardware/persistence/RAW recording remain untested.")
+        print("Validated on Z6 II C1.70 (macOS ImageCaptureCore + reboot readback); Z7 II and external recording remain untested.")
         return 0
     if args.action == "prepare-keys":
         print(json.dumps(prepare_keys(args.keys_dir), indent=2))

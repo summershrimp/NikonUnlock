@@ -75,3 +75,15 @@ class MacTransportTests(unittest.TestCase):
         auto = source.index('if ([deviceID isEqualToString:@"auto"]) {', wait)
         self.assertIn('Nikon camera was not discovered', source[wait:auto])
         self.assertIn('self.cameras.count > 1', source)
+
+    def test_prepare_keys_removes_macos_appledouble_sidecars(self):
+        from pathlib import Path
+        import unlock_hdmi_raw_ii as r
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / '._HDMIARAW.KEY').write_bytes(b'x' * 4096)
+            (root / '._SRF_FUNC.KEY').write_bytes(b'y' * 4096)
+            r.prepare_keys(root)
+            self.assertFalse((root / '._HDMIARAW.KEY').exists())
+            self.assertFalse((root / '._SRF_FUNC.KEY').exists())
+            r.validate_keys(root)
