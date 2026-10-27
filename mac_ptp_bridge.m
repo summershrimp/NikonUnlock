@@ -115,6 +115,7 @@ static BOOL allowed(NSString *method, uint16_t opcode, NSArray<NSNumber *> *para
 @property(nonatomic, strong) NSMutableArray<ICCameraDevice *> *cameras;
 @property(nonatomic, strong) ICCameraDevice *camera;
 @property(nonatomic) BOOL enumerated;
+@property(nonatomic) BOOL discoveryFinished;
 @property(nonatomic) BOOL opened;
 @property(nonatomic) BOOL openComplete;
 @property(nonatomic) BOOL closeComplete;
@@ -154,6 +155,36 @@ static BOOL allowed(NSString *method, uint16_t opcode, NSArray<NSNumber *> *para
 
 - (void)deviceBrowserDidEnumerateLocalDevices:(ICDeviceBrowser *)browser {
     self.enumerated = YES;
+}
+
+- (void)deviceBrowser:(ICDeviceBrowser *)browser didStopWithError:(NSError *)error {
+    self.discoveryFinished = YES;
+}
+
+- (BOOL)waitForCamera:(NSString *)deviceID timeout:(double)timeout {
+    double deadline = clockNow() + timeout;
+    while (!self.discoveryFinished && clockNow() < deadline) {
+        BOOL found = NO;
+        BOOL ambiguous = NO;
+        if ([deviceID isEqualToString:@"auto"]) {
+            found = self.cameras.count == 1;
+            ambiguous = self.cameras.count > 1;
+        } else {
+            for (ICCameraDevice *device in self.cameras) {
+                if ([device.UUIDString isEqualToString:deviceID]) found = YES;
+            }
+        }
+        if (ambiguous) return YES;
+        // DeviceBrowser enumeration and the first ICCameraDevice addition can
+        // arrive in separate main-loop turns. Do not decide that no camera
+        // exists merely because the browser has finished its first scan.
+        if (found && self.enumerated) {
+            pump(0.5);
+            return YES;
+        }
+        pump(0.05);
+    }
+    return NO;
 }
 
 - (void)device:(ICDevice *)device didOpenSessionWithError:(NSError *)error {
@@ -211,6 +242,11 @@ static BOOL allowed(NSString *method, uint16_t opcode, NSArray<NSNumber *> *para
 }
 
 - (NSString *)openDevice:(NSString *)deviceID {
+    if (![self waitForCamera:deviceID timeout:12]) {
+        return [deviceID isEqualToString:@"auto"] ?
+            @"Nikon camera was not discovered within 12 seconds" :
+            @"selected Nikon camera UUID was not discovered within 12 seconds";
+    }
     if ([deviceID isEqualToString:@"auto"]) {
         if (self.cameras.count != 1) return @"connect exactly one Nikon camera or select --device from list-devices";
         self.camera = self.cameras.firstObject;

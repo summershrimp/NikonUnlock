@@ -63,3 +63,15 @@ class CliTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class MacTransportTests(unittest.TestCase):
+    def test_camera_must_be_discovered_before_opening(self):
+        import mac_transport
+        from pathlib import Path
+
+        source = Path(mac_transport.SOURCE).read_text()
+        wait = source.index('if (![self waitForCamera:deviceID timeout:12])')
+        auto = source.index('if ([deviceID isEqualToString:@"auto"]) {', wait)
+        self.assertIn('Nikon camera was not discovered', source[wait:auto])
+        self.assertIn('self.cameras.count > 1', source)
